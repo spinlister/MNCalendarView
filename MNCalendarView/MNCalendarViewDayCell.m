@@ -39,37 +39,15 @@ NSString *const MNCalendarViewDayCellIdentifier = @"MNCalendarViewDayCellIdentif
   self.weekday = (components.weekday + self.calendar.firstWeekday - 1) % 7;
   self.titleLabel.text = [NSString stringWithFormat:@"%ld", (long)components.day];
   self.enabled = monthComponents.month == components.month;
-  
-  [self setNeedsDisplay];
 }
 
 - (void)setEnabled:(BOOL)enabled {
   [super setEnabled:enabled];
-  
-  self.titleLabel.textColor =
-  self.enabled ? UIColor.darkTextColor : UIColor.lightGrayColor;
-  
-  self.backgroundColor =
-  self.enabled ? UIColor.whiteColor : [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f];
-}
 
-- (void)drawRect:(CGRect)rect {
-  [super drawRect:rect];
-  
-  CGContextRef context = UIGraphicsGetCurrentContext();
-  
-  CGColorRef separatorColor = self.separatorColor.CGColor;
-  
-  CGSize size = self.bounds.size;
-  
-  if (self.weekday != 7) {
-    CGFloat pixel = 1.f / [UIScreen mainScreen].scale;
-    MNContextDrawLine(context,
-                      CGPointMake(size.width - pixel, pixel),
-                      CGPointMake(size.width - pixel, size.height),
-                      separatorColor,
-                      pixel);
-  }
+  if (self.colors)
+    self.titleLabel.textColor = self.enabled ?
+                                  self.colors[kMNCalendarColorValidText] :
+                                  self.colors[kMNCalendarColorInvalidText];
 }
 
 @end

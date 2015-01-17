@@ -8,7 +8,15 @@
 
 #import <UIKit/UIKit.h>
 
-CG_EXTERN void MNContextDrawLine(CGContextRef c, CGPoint start, CGPoint end, CGColorRef color, CGFloat lineWidth);
+// calendar color dictionary keys
+extern NSString *const kMNCalendarColorHeaderBackground;
+extern NSString *const kMNCalendarColorCellBackground;
+extern NSString *const kMNCalendarColorCellSeparator;
+extern NSString *const kMNCalendarColorCellHighlight;
+extern NSString *const kMNCalendarColorCellHighlightRange;
+extern NSString *const kMNCalendarColorValidTextHighlight;
+extern NSString *const kMNCalendarColorValidText;
+extern NSString *const kMNCalendarColorInvalidText;
 
 @interface MNCalendarViewCell : UICollectionViewCell
 
@@ -17,7 +25,9 @@ CG_EXTERN void MNContextDrawLine(CGContextRef c, CGPoint start, CGPoint end, CGC
 @property(nonatomic,assign,getter = isEnabled) BOOL enabled;
 
 @property(nonatomic,strong) UIColor *separatorColor;
-
 @property(nonatomic,strong,readonly) UILabel *titleLabel;
+@property(nonatomic,strong,readonly) NSDictionary *colors;
+
+- (void)updateColors:(NSDictionary *)colors;
 
 @end

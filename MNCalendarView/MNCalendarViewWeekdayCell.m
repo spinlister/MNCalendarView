@@ -17,15 +17,13 @@ NSString *const MNCalendarViewWeekdayCellIdentifier = @"MNCalendarViewWeekdayCel
   if (self = [super initWithFrame:frame]) {
     self.titleLabel.font = [UIFont systemFontOfSize:12.f];
     self.enabled = NO;
-    
+
   }
   return self;
 }
 
 - (void)setWeekday:(NSUInteger)weekday {
   _weekday = weekday;
-  
-  [self setNeedsDisplay];
 }
 
 @end

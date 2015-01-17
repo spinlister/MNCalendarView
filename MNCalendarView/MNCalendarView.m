@@ -7,11 +7,6 @@
 //
 
 #import "MNCalendarView.h"
-#import "MNCalendarViewLayout.h"
-#import "MNCalendarViewDayCell.h"
-#import "MNCalendarViewWeekdayCell.h"
-#import "MNCalendarHeaderView.h"
-#import "MNFastDateEnumeration.h"
 #import "NSDate+MNAdditions.h"
 
 @interface MNCalendarView() <UICollectionViewDataSource, UICollectionViewDelegate>
@@ -47,7 +42,17 @@
   self.weekdayCellClass = MNCalendarViewWeekdayCell.class;
   self.dayCellClass     = MNCalendarViewDayCell.class;
 
-  _separatorColor = [UIColor colorWithRed:.85f green:.85f blue:.85f alpha:1.f];
+  // color defaults
+  self.colors = [@{
+      kMNCalendarColorHeaderBackground: [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f],
+      kMNCalendarColorCellBackground: [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f],
+      kMNCalendarColorCellSeparator: [UIColor colorWithRed:.85f green:.85f blue:.85f alpha:1.f],
+      kMNCalendarColorCellHighlight: [UIColor colorWithRed:0.23f green:0.61f blue:1.f alpha:1.f],
+      kMNCalendarColorCellHighlightRange: [UIColor colorWithRed:0.23f green:0.61f blue:1.f alpha:1.f],
+      kMNCalendarColorValidText: [UIColor darkTextColor],
+      kMNCalendarColorValidTextHighlight: [UIColor whiteColor],
+      kMNCalendarColorInvalidText: [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f],
+    } mutableCopy];
 
   [self addSubview:self.collectionView];
   [self applyConstraints];
@@ -77,7 +82,6 @@
     _collectionView =
       [[UICollectionView alloc] initWithFrame:CGRectZero
                          collectionViewLayout:layout];
-    _collectionView.backgroundColor = [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f];
     _collectionView.translatesAutoresizingMaskIntoConstraints = NO;
     _collectionView.showsHorizontalScrollIndicator = NO;
     _collectionView.showsVerticalScrollIndicator = NO;
@@ -90,7 +94,7 @@
 }
 
 - (void)setSeparatorColor:(UIColor *)separatorColor {
-  _separatorColor = separatorColor;
+  _colors[kMNCalendarColorCellSeparator] = separatorColor;
 }
 
 - (void)setCalendar:(NSCalendar *)calendar {
@@ -203,8 +207,11 @@
                                        withReuseIdentifier:MNCalendarHeaderViewIdentifier
                                               forIndexPath:indexPath];
 
-  headerView.backgroundColor = self.collectionView.backgroundColor;
-  headerView.titleLabel.text = [self.monthFormatter stringFromDate:self.monthDates[indexPath.section]];
+  headerView.backgroundColor = _colors[kMNCalendarColorHeaderBackground];
+
+  NSDictionary *textAttributes = @{ NSForegroundColorAttributeName: _colors[kMNCalendarColorValidText] };
+  NSString *title = [self.monthFormatter stringFromDate:self.monthDates[indexPath.section]];
+  headerView.titleLabel.attributedText = [[NSAttributedString alloc] initWithString:title attributes:textAttributes];
 
   return headerView;
 }
@@ -231,15 +238,19 @@
 
     NSInteger adjustedIndexOfDayInWeek = (indexPath.item + self.calendar.firstWeekday - 1) % self.daysInWeek;
 
-    cell.backgroundColor = self.collectionView.backgroundColor;
-    cell.titleLabel.text = self.weekdaySymbols[adjustedIndexOfDayInWeek];
-    cell.separatorColor = self.separatorColor;
+    NSDictionary *textAttributes = @{ NSForegroundColorAttributeName: _colors[kMNCalendarColorInvalidText] };
+    NSString *title = self.weekdaySymbols[adjustedIndexOfDayInWeek];
+    cell.titleLabel.attributedText = [[NSAttributedString alloc] initWithString:title attributes:textAttributes];
+
+    [cell updateColors:_colors];
+
     return cell;
   }
-  MNCalendarViewDayCell *cell =
-    [collectionView dequeueReusableCellWithReuseIdentifier:MNCalendarViewDayCellIdentifier
-                                              forIndexPath:indexPath];
-  cell.separatorColor = self.separatorColor;
+
+  MNCalendarViewDayCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:MNCalendarViewDayCellIdentifier
+                                                                          forIndexPath:indexPath];
+
+  [cell updateColors:_colors];
 
   NSDate *monthDate = self.monthDates[indexPath.section];
   NSDate *firstDateInMonth = [self firstVisibleDateOfMonth:monthDate];

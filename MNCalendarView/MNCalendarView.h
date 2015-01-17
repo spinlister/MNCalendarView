@@ -8,6 +8,12 @@
 
 #import <UIKit/UIKit.h>
 
+#import "MNCalendarViewLayout.h"
+#import "MNCalendarViewDayCell.h"
+#import "MNCalendarViewWeekdayCell.h"
+#import "MNCalendarHeaderView.h"
+#import "MNFastDateEnumeration.h"
+
 #define MN_MINUTE 60.f
 #define MN_HOUR   MN_MINUTE * 60.f
 #define MN_DAY    MN_HOUR * 24.f
@@ -15,6 +21,13 @@
 #define MN_YEAR   MN_DAY * 365.f
 
 @protocol MNCalendarViewDelegate;
+
+// calendar color dictionary keys
+extern NSString *const kMNCalendarColorHeaderBackground;
+extern NSString *const kMNCalendarColorCellBackground;
+extern NSString *const kMNCalendarColorCellSeparator;
+extern NSString *const kMNCalendarColorValidText;
+extern NSString *const kMNCalendarColorInvalidText;
 
 @interface MNCalendarView : UIView <UICollectionViewDataSource, UICollectionViewDelegate>
 
@@ -27,7 +40,10 @@
 @property(nonatomic,copy)   NSDate     *toDate;
 @property(nonatomic,copy)   NSDate     *selectedDate;
 
+// Deprecated
 @property(nonatomic,strong) UIColor *separatorColor UI_APPEARANCE_SELECTOR; // default is the standard separator gray
+
+@property(nonatomic,strong) NSMutableDictionary *colors;
 
 @property(nonatomic,strong) Class headerViewClass;
 @property(nonatomic,strong) Class weekdayCellClass;

@@ -8,47 +8,67 @@
 
 #import "MNCalendarViewCell.h"
 
-void MNContextDrawLine(CGContextRef c, CGPoint start, CGPoint end, CGColorRef color, CGFloat lineWidth) {
-  CGContextSetAllowsAntialiasing(c, false);
-  CGContextSetStrokeColorWithColor(c, color);
-  CGContextSetLineWidth(c, lineWidth);
-  CGContextMoveToPoint(c, start.x, start.y - (lineWidth/2.f));
-  CGContextAddLineToPoint(c, end.x, end.y - (lineWidth/2.f));
-  CGContextStrokePath(c);
-  CGContextSetAllowsAntialiasing(c, true);
-}
-
 NSString *const MNCalendarViewCellIdentifier = @"MNCalendarViewCellIdentifier";
 
-@interface MNCalendarViewCell()
+// calendar color dictionary keys
+NSString *const kMNCalendarColorHeaderBackground = @"kMNCalendarColorHeaderBackground";
+NSString *const kMNCalendarColorCellBackground = @"kMNCalendarColorCellBackground";
+NSString *const kMNCalendarColorCellSeparator = @"kMNCalendarColorCellSeparator";
+NSString *const kMNCalendarColorCellHighlight = @"kMNCalendarColorCellHighlight";
+NSString *const kMNCalendarColorCellHighlightRange = @"kMNCalendarColorCellHighlightRange";
+NSString *const kMNCalendarColorValidTextHighlight = @"kMNCalendarColorValidTextHighlight";
+NSString *const kMNCalendarColorValidText = @"kMNCalendarColorValidText";
+NSString *const kMNCalendarColorInvalidText = @"kMNCalendarColorInvalidText";
 
 @property(nonatomic,strong,readwrite) UILabel *titleLabel;
 
+@property(nonatomic,strong) UILabel *titleLabel;
+@property(nonatomic,strong) NSDictionary *colors;
+@property(nonatomic,strong) CALayer *separatorLayer;
 @end
 
 @implementation MNCalendarViewCell
 
 - (id)initWithFrame:(CGRect)frame {
   if (self = [super initWithFrame:frame]) {
-    self.backgroundColor = UIColor.whiteColor;
-    self.contentView.backgroundColor = UIColor.clearColor;
-    
+
     self.titleLabel = [[UILabel alloc] initWithFrame:self.bounds];
     self.titleLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
-    self.titleLabel.font = [UIFont systemFontOfSize:14.f];
-    self.titleLabel.textColor = [UIColor darkTextColor];
-    self.titleLabel.highlightedTextColor = [UIColor whiteColor];
-    self.titleLabel.textAlignment = NSTextAlignmentCenter;
     self.titleLabel.userInteractionEnabled = NO;
     self.titleLabel.backgroundColor = [UIColor clearColor];
-    
+
+    // FIXME deprecated, update for ios6+
+    self.titleLabel.font = [UIFont systemFontOfSize:14.f];
+    self.titleLabel.textAlignment = NSTextAlignmentCenter;
+
     [self.contentView addSubview:self.titleLabel];
     
     self.selectedBackgroundView = [[UIView alloc] initWithFrame:self.bounds];
     self.selectedBackgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
-    self.selectedBackgroundView.backgroundColor = [UIColor colorWithRed:0.23f green:0.61f blue:1.f alpha:1.f];
+
+    CGFloat separatorHeight = 1.0f / [UIScreen mainScreen].scale;
+    self.separatorLayer = [CALayer layer];
+    _separatorLayer.frame = CGRectMake(0,
+                                       CGRectGetHeight(self.bounds) - separatorHeight,
+                                       CGRectGetWidth(self.bounds),
+                                       separatorHeight);
+    [self.layer addSublayer:_separatorLayer];
   }
   return self;
+}
+
+- (void)updateColors:(NSDictionary *)colors
+{
+  self.colors = colors;
+
+  self.backgroundColor = colors[kMNCalendarColorCellBackground];
+  self.separatorColor = colors[kMNCalendarColorCellSeparator];
+
+  self.titleLabel.textColor = colors[kMNCalendarColorValidText];
+  self.titleLabel.highlightedTextColor = colors[kMNCalendarColorValidTextHighlight];
+
+  self.separatorLayer.backgroundColor = ((UIColor *)colors[kMNCalendarColorCellSeparator]).CGColor;
+  self.selectedBackgroundView.backgroundColor = colors[kMNCalendarColorCellHighlight];
 }
 
 - (void)layoutSubviews {
@@ -56,19 +76,12 @@ NSString *const MNCalendarViewCellIdentifier = @"MNCalendarViewCellIdentifier";
   
   self.contentView.frame = self.bounds;
   self.selectedBackgroundView.frame = self.bounds;
-}
 
-- (void)drawRect:(CGRect)rect {
-  CGContextRef context = UIGraphicsGetCurrentContext();
-  
-  CGColorRef separatorColor = self.separatorColor.CGColor;
-  
-  CGFloat pixel = 1.f / [UIScreen mainScreen].scale;
-  MNContextDrawLine(context,
-                    CGPointMake(0.f, self.bounds.size.height),
-                    CGPointMake(self.bounds.size.width, self.bounds.size.height),
-                    separatorColor,
-                    pixel);
+  CGFloat separatorHeight = 1.0f / [UIScreen mainScreen].scale;
+  _separatorLayer.frame = CGRectMake(0,
+                                     CGRectGetHeight(self.bounds) - separatorHeight,
+                                     CGRectGetWidth(self.bounds),
+                                     separatorHeight);
 }
 
 @end
