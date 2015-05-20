@@ -9,16 +9,25 @@
 #import "MNCalendarView.h"
 #import "NSDate+MNAdditions.h"
 
+#define DAYS_IN_A_WEEK 7
+
 @interface MNCalendarView() <UICollectionViewDataSource, UICollectionViewDelegate>
 
-@property(nonatomic,strong,readwrite) UICollectionView *collectionView;
-@property(nonatomic,strong,readwrite) UICollectionViewFlowLayout *layout;
+@property(nonatomic,strong) UICollectionView *collectionView;
+@property(nonatomic,strong) UICollectionViewFlowLayout *layout;
 
-@property(nonatomic,strong,readwrite) NSArray *monthDates;
-@property(nonatomic,strong,readwrite) NSArray *weekdaySymbols;
-@property(nonatomic,assign,readwrite) NSUInteger daysInWeek;
+@property(nonatomic,strong) NSArray *monthDates;
+@property(nonatomic,strong) NSArray *weekdaySymbols;
 
-@property(nonatomic,strong,readwrite) NSDateFormatter *monthFormatter;
+@property(nonatomic,assign) NSUInteger daysInWeek;
+
+@property(nonatomic,strong) NSDate *selectedStartDate;
+@property(nonatomic,strong) NSDate *selectedEndDate;
+
+@property(nonatomic,strong) NSIndexPath *selectedStartPath;
+@property(nonatomic,strong) NSIndexPath *selectedEndPath;
+
+@property(nonatomic,strong) NSDateFormatter *monthFormatter;
 
 - (NSDate *)firstVisibleDateOfMonth:(NSDate *)date;
 - (NSDate *)lastVisibleDateOfMonth:(NSDate *)date;
@@ -26,17 +35,19 @@
 - (BOOL)dateEnabled:(NSDate *)date;
 - (BOOL)canSelectItemAtIndexPath:(NSIndexPath *)indexPath;
 
-- (void)applyConstraints;
-
 @end
 
 @implementation MNCalendarView
 
 - (void)commonInit {
+
+  self.autoresizesSubviews = YES;
+
   self.calendar   = NSCalendar.currentCalendar;
   self.fromDate   = [NSDate.date mn_beginningOfDay:self.calendar];
   self.toDate     = [self.fromDate dateByAddingTimeInterval:MN_YEAR * 4];
-  self.daysInWeek = 7;
+
+  self.selectType = MNCalendarSelectionTypeSingle;
 
   self.headerViewClass  = MNCalendarHeaderView.class;
   self.weekdayCellClass = MNCalendarViewWeekdayCell.class;
@@ -47,15 +58,16 @@
       kMNCalendarColorHeaderBackground: [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f],
       kMNCalendarColorCellBackground: [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f],
       kMNCalendarColorCellSeparator: [UIColor colorWithRed:.85f green:.85f blue:.85f alpha:1.f],
+      kMNCalendarColorCellHighlightSingle: [UIColor colorWithRed:0.23f green:0.61f blue:1.f alpha:1.f],
       kMNCalendarColorCellHighlight: [UIColor colorWithRed:0.23f green:0.61f blue:1.f alpha:1.f],
       kMNCalendarColorCellHighlightRange: [UIColor colorWithRed:0.23f green:0.61f blue:1.f alpha:1.f],
+      kMNCalendarColorCellHighlightRangeFill: [UIColor colorWithRed:0.13f green:0.51f blue:.9f alpha:1.f],
       kMNCalendarColorValidText: [UIColor darkTextColor],
       kMNCalendarColorValidTextHighlight: [UIColor whiteColor],
       kMNCalendarColorInvalidText: [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f],
     } mutableCopy];
 
   [self addSubview:self.collectionView];
-  [self applyConstraints];
   [self reloadData];
 }
 
@@ -80,9 +92,9 @@
     MNCalendarViewLayout *layout = [[MNCalendarViewLayout alloc] init];
 
     _collectionView =
-      [[UICollectionView alloc] initWithFrame:CGRectZero
+      [[UICollectionView alloc] initWithFrame:self.bounds
                          collectionViewLayout:layout];
-    _collectionView.translatesAutoresizingMaskIntoConstraints = NO;
+    _collectionView.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     _collectionView.showsHorizontalScrollIndicator = NO;
     _collectionView.showsVerticalScrollIndicator = NO;
     _collectionView.dataSource = self;
@@ -93,6 +105,8 @@
   return _collectionView;
 }
 
+#pragma mark - Setter overrides
+
 - (void)setSeparatorColor:(UIColor *)separatorColor {
   _colors[kMNCalendarColorCellSeparator] = separatorColor;
 }
@@ -102,12 +116,41 @@
 
   self.monthFormatter = [[NSDateFormatter alloc] init];
   self.monthFormatter.calendar = calendar;
+  self.weekdaySymbols = self.monthFormatter.shortWeekdaySymbols;
+
   [self.monthFormatter setDateFormat:@"MMMM yyyy"];
 }
 
-- (void)setSelectedDate:(NSDate *)selectedDate {
-  _selectedDate = [selectedDate mn_beginningOfDay:self.calendar];
+- (void)setSelectedStartDate:(NSDate *)selectedDate {
+  _selectedStartDate = [selectedDate mn_beginningOfDay:self.calendar];
 }
+- (void)setSelectedEndDate:(NSDate *)selectedDate {
+  _selectedEndDate = [selectedDate mn_beginningOfDay:self.calendar];
+}
+
+- (void)setSelectType:(MNCalendarSelectType)type
+{
+  _selectType = type;
+  switch(_selectType)
+  {
+    case MNCalendarSelectionTypeNone:
+      _collectionView.allowsSelection = NO;
+      break;
+
+    default:
+    case MNCalendarSelectionTypeSingle:
+      _collectionView.allowsSelection = YES;
+      _collectionView.allowsMultipleSelection = NO;
+      break;
+
+    case MNCalendarSelectionTypeStart:
+    case MNCalendarSelectionTypeEnd:
+      _collectionView.allowsSelection = YES;
+      _collectionView.allowsMultipleSelection = YES;
+  }
+}
+
+#pragma mark -
 
 - (void)reloadData {
   NSMutableArray *monthDates = @[].mutableCopy;
@@ -116,20 +159,13 @@
                                              toDate:[self.toDate lastDateOfMonthWithCalendar:self.calendar]
                                            calendar:self.calendar
                                                unit:NSMonthCalendarUnit];
-  for (NSDate *date in enumeration) {
+  for (NSDate *date in enumeration)
     [monthDates addObject:date];
-  }
 
-  if (self.inversed) {
+  if (self.inversed)
       self.monthDates = [[monthDates reverseObjectEnumerator] allObjects];
-  } else {
+  else
       self.monthDates = monthDates;
-  }
-
-  NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-  formatter.calendar = self.calendar;
-
-  self.weekdaySymbols = formatter.shortWeekdaySymbols;
 
   [self.collectionView reloadData];
 }
@@ -137,9 +173,6 @@
 - (void)registerUICollectionViewClasses {
   [_collectionView registerClass:self.dayCellClass
       forCellWithReuseIdentifier:MNCalendarViewDayCellIdentifier];
-
-  [_collectionView registerClass:self.weekdayCellClass
-      forCellWithReuseIdentifier:MNCalendarViewWeekdayCellIdentifier];
 
   [_collectionView registerClass:self.headerViewClass
       forSupplementaryViewOfKind:UICollectionElementKindSectionHeader
@@ -156,26 +189,11 @@
     return [[date lastDateOfMonthWithCalendar:self.calendar] lastDateOfWeekWithCalendar:self.calendar];
 }
 
-- (void)applyConstraints {
-  NSDictionary *views = @{@"collectionView" : self.collectionView};
-  [self addConstraints:
-   [NSLayoutConstraint constraintsWithVisualFormat:@"H:|[collectionView]|"
-                                           options:0
-                                           metrics:nil
-                                             views:views]];
-
-  [self addConstraints:
-   [NSLayoutConstraint constraintsWithVisualFormat:@"V:|[collectionView]|"
-                                           options:0
-                                           metrics:nil
-                                             views:views]
-   ];
-}
-
 - (BOOL)dateEnabled:(NSDate *)date {
   if (self.delegate && [self.delegate respondsToSelector:@selector(calendarView:shouldSelectDate:)]) {
     return [self.delegate calendarView:self shouldSelectDate:date];
   }
+
   return YES;
 }
 
@@ -186,7 +204,6 @@
 
   if ([cell isKindOfClass:MNCalendarViewDayCell.class] && enabled) {
     MNCalendarViewDayCell *dayCell = (MNCalendarViewDayCell *)cell;
-
     enabled = [self dateEnabled:dayCell.date];
   }
 
@@ -199,6 +216,7 @@
   return self.monthDates.count;
 }
 
+
 - (UICollectionReusableView *)collectionView:(UICollectionView *)collectionView
            viewForSupplementaryElementOfKind:(NSString *)kind
                                  atIndexPath:(NSIndexPath *)indexPath {
@@ -209,14 +227,20 @@
 
   headerView.backgroundColor = _colors[kMNCalendarColorHeaderBackground];
 
-  NSDictionary *textAttributes = @{ NSForegroundColorAttributeName: _colors[kMNCalendarColorValidText] };
+  NSDictionary *textAttributes = @{ NSForegroundColorAttributeName: _colors[kMNCalendarColorInvalidText] };
   NSString *title = [self.monthFormatter stringFromDate:self.monthDates[indexPath.section]];
-  headerView.titleLabel.attributedText = [[NSAttributedString alloc] initWithString:title attributes:textAttributes];
+  headerView.titleLabel.attributedText = [[NSAttributedString alloc] initWithString:[title uppercaseString] attributes:textAttributes];
+
+  [headerView setLabels:self.weekdaySymbols attributes:@{
+    NSForegroundColorAttributeName: _colors[kMNCalendarColorInvalidText],
+    NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:12],
+  }];
 
   return headerView;
 }
 
-- (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
+- (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section
+{
   NSDate *monthDate = self.monthDates[section];
 
   NSDateComponents *components =
@@ -225,66 +249,80 @@
                        toDate:[self lastVisibleDateOfMonth:monthDate]
                       options:0];
 
-  return self.daysInWeek + components.day + 1;
+  return components.day + 1;
+}
+
+- (MNCalendarSelectType)selectionTypeForIndexPath:(NSIndexPath *)indexPath
+{
+  if (!_selectedStartPath && !_selectedEndPath)
+    return MNCalendarSelectionTypeNone;
+    
+  NSComparisonResult startPath = [indexPath compare:_selectedStartPath];
+  NSComparisonResult endPath = [indexPath compare:_selectedEndPath];
+
+  if (startPath == NSOrderedSame && endPath == NSOrderedSame)
+    return MNCalendarSelectionTypeSingle;
+
+  else if (startPath == NSOrderedSame)
+    return MNCalendarSelectionTypeStart;
+  
+  else if (endPath == NSOrderedSame)
+    return MNCalendarSelectionTypeEnd;
+  
+  else if (_selectedStartPath && startPath == NSOrderedDescending && 
+           _selectedEndPath && endPath == NSOrderedAscending)
+    return MNCalendarSelectionTypeFill;
+  
+  else
+    return MNCalendarSelectionTypeNone;
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView
-                  cellForItemAtIndexPath:(NSIndexPath *)indexPath {
-
-  if (indexPath.item < self.daysInWeek) {
-    MNCalendarViewWeekdayCell *cell =
-      [collectionView dequeueReusableCellWithReuseIdentifier:MNCalendarViewWeekdayCellIdentifier
-                                                forIndexPath:indexPath];
-
-    NSInteger adjustedIndexOfDayInWeek = (indexPath.item + self.calendar.firstWeekday - 1) % self.daysInWeek;
-
-    NSDictionary *textAttributes = @{ NSForegroundColorAttributeName: _colors[kMNCalendarColorInvalidText] };
-    NSString *title = self.weekdaySymbols[adjustedIndexOfDayInWeek];
-    cell.titleLabel.attributedText = [[NSAttributedString alloc] initWithString:title attributes:textAttributes];
-
-    [cell updateColors:_colors];
-
-    return cell;
-  }
-
+                  cellForItemAtIndexPath:(NSIndexPath *)indexPath
+{
   MNCalendarViewDayCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:MNCalendarViewDayCellIdentifier
                                                                           forIndexPath:indexPath];
 
+
+  cell.position = [self selectionTypeForIndexPath:indexPath];
   [cell updateColors:_colors];
 
   NSDate *monthDate = self.monthDates[indexPath.section];
   NSDate *firstDateInMonth = [self firstVisibleDateOfMonth:monthDate];
 
-  NSUInteger day = indexPath.item - self.daysInWeek;
+  NSUInteger day = indexPath.item;
 
-  if (self.inversed) {
-
-      NSInteger numberOfDaysInMonth = ([self.collectionView numberOfItemsInSection:indexPath.section] - self.daysInWeek) - 1;
-      NSInteger r = day / self.daysInWeek;
-      NSInteger c = day % self.daysInWeek;
-      day = numberOfDaysInMonth - (r * self.daysInWeek + (self.daysInWeek - c)) + 1;
-
+  if (self.inversed)
+  {
+    NSInteger numberOfDaysInMonth = ([self.collectionView numberOfItemsInSection:indexPath.section] - DAYS_IN_A_WEEK) - 1;
+    NSInteger r = day / DAYS_IN_A_WEEK;
+    NSInteger c = day % DAYS_IN_A_WEEK;
+    day = numberOfDaysInMonth - (r * DAYS_IN_A_WEEK + (DAYS_IN_A_WEEK - c)) + 1;
   }
 
-  NSDateComponents *components =
-    [self.calendar components:NSDayCalendarUnit|NSMonthCalendarUnit|NSYearCalendarUnit
-                     fromDate:firstDateInMonth];
+  NSDateComponents *components = [self.calendar components:(NSDayCalendarUnit | NSMonthCalendarUnit | NSYearCalendarUnit)
+                                                  fromDate:firstDateInMonth];
   components.day += day;
 
   NSDate *date = [self.calendar dateFromComponents:components];
-  [cell setDate:date
-          month:monthDate
-       calendar:self.calendar];
+  [cell setDate:date month:monthDate calendar:self.calendar];
 
-  if (cell.enabled) {
+  if (cell.enabled)
     [cell setEnabled:[self dateEnabled:date]];
-  }
-
-  if (self.selectedDate && cell.enabled) {
-    [cell setSelected:[date isEqualToDate:self.selectedDate]];
-  }
 
   return cell;
+}
+
+- (MNCalendarViewCell *)cellForDate:(NSDate *)date
+{
+  NSDate *firstDateInMonth = [self firstVisibleDateOfMonth:date];
+  NSDateComponents *components = [self.calendar components:(NSDayCalendarUnit | NSMonthCalendarUnit | NSYearCalendarUnit)
+                                                  fromDate:firstDateInMonth];
+
+  NSInteger row = components.day;
+  const NSUInteger paths[2] = { MAX(0,(components.month % 12) - 1), row};
+  NSIndexPath *path = [NSIndexPath indexPathWithIndexes:paths length:2];
+  return (MNCalendarViewCell *)[_collectionView cellForItemAtIndexPath:path];
 }
 
 #pragma mark - UICollectionViewDelegate
@@ -297,20 +335,43 @@
   return [self canSelectItemAtIndexPath:indexPath];
 }
 
+- (BOOL)collectionView:(UICollectionView *)collectionView shouldDeselectItemAtIndexPath:(NSIndexPath *)indexPath
+{
+  [collectionView reloadData];
+  return YES;
+}
+
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
-  MNCalendarViewCell *cell = (MNCalendarViewCell *)[self collectionView:collectionView cellForItemAtIndexPath:indexPath];
+  MNCalendarViewDayCell *cell = (MNCalendarViewCell *)[self collectionView:collectionView cellForItemAtIndexPath:indexPath];
 
-  if ([cell isKindOfClass:MNCalendarViewDayCell.class] && cell.enabled) {
-    MNCalendarViewDayCell *dayCell = (MNCalendarViewDayCell *)cell;
+  // Deselect any previously selected cell
+  if (_selectedStartPath && _selectType == MNCalendarSelectionTypeStart)
+    self.selectedStartPath = nil;
 
-    self.selectedDate = dayCell.date;
+  else if (_selectedEndPath && _selectType == MNCalendarSelectionTypeEnd)
+    self.selectedEndPath = nil;
 
-    if (self.delegate && [self.delegate respondsToSelector:@selector(calendarView:didSelectDate:)]) {
-      [self.delegate calendarView:self didSelectDate:dayCell.date];
-    }
-
-    [self.collectionView reloadData];
+  switch (_selectType)
+  {
+    case MNCalendarSelectionTypeStart:
+      cell.position = MNCalendarSelectionTypeStart;
+      self.selectedStartPath = indexPath; 
+      self.selectedStartDate = [cell.date mn_beginningOfDay:self.calendar];
+      break;
+    case MNCalendarSelectionTypeEnd:
+      cell.position = MNCalendarSelectionTypeEnd;
+      self.selectedEndPath = indexPath;   
+      self.selectedEndDate = cell.date;
+      break;
   }
+   
+  if (self.delegate && [self.delegate respondsToSelector:@selector(calendarView:didSelectDate:)])
+    [self.delegate calendarView:self didSelectDate:cell.date];
+
+  if (self.delegate && [self.delegate respondsToSelector:@selector(calendarView:didSelectCell:)])
+    [self.delegate calendarView:self didSelectCell:cell];
+
+  [collectionView reloadData];
 }
 
 - (CGSize)collectionView:(UICollectionView *)collectionView
@@ -318,13 +379,13 @@
   sizeForItemAtIndexPath:(NSIndexPath *)indexPath {
 
   CGFloat width      = self.bounds.size.width;
-  CGFloat itemWidth  = roundf(width / self.daysInWeek);
-  CGFloat itemHeight = indexPath.item < self.daysInWeek ? 30.f : itemWidth;
+  CGFloat itemWidth  = roundf(width / DAYS_IN_A_WEEK);
+  CGFloat itemHeight = itemWidth;
 
-  NSUInteger weekday = indexPath.item % self.daysInWeek;
+  NSUInteger weekday = indexPath.item % DAYS_IN_A_WEEK;
 
-  if (weekday == self.daysInWeek - 1) {
-    itemWidth = width - (itemWidth * (self.daysInWeek - 1));
+  if (weekday == DAYS_IN_A_WEEK - 1) {
+    itemWidth = width - (itemWidth * (DAYS_IN_A_WEEK - 1));
   }
 
   return CGSizeMake(itemWidth, itemHeight);

@@ -22,23 +22,17 @@
 
 @protocol MNCalendarViewDelegate;
 
-// calendar color dictionary keys
-extern NSString *const kMNCalendarColorHeaderBackground;
-extern NSString *const kMNCalendarColorCellBackground;
-extern NSString *const kMNCalendarColorCellSeparator;
-extern NSString *const kMNCalendarColorValidText;
-extern NSString *const kMNCalendarColorInvalidText;
-
 @interface MNCalendarView : UIView <UICollectionViewDataSource, UICollectionViewDelegate>
 
 @property(nonatomic,strong,readonly) UICollectionView *collectionView;
 
-@property(nonatomic,assign) id<MNCalendarViewDelegate> delegate;
+@property(nonatomic,weak) id<MNCalendarViewDelegate> delegate;
 
-@property(nonatomic,strong) NSCalendar *calendar;
-@property(nonatomic,copy)   NSDate     *fromDate;
-@property(nonatomic,copy)   NSDate     *toDate;
-@property(nonatomic,copy)   NSDate     *selectedDate;
+@property(nonatomic,strong)   NSCalendar *calendar;
+@property(nonatomic,strong)   NSDate     *fromDate;
+@property(nonatomic,strong)   NSDate     *toDate;
+
+@property(nonatomic,assign) MNCalendarSelectType selectType;
 
 // Deprecated
 @property(nonatomic,strong) UIColor *separatorColor UI_APPEARANCE_SELECTOR; // default is the standard separator gray
@@ -52,7 +46,9 @@ extern NSString *const kMNCalendarColorInvalidText;
 @property(nonatomic, assign) BOOL inversed;
 
 - (void)reloadData;
-- (void)registerUICollectionViewClasses; 
+- (void)registerUICollectionViewClasses;
+
+- (MNCalendarViewCell *)cellForDate:(NSDate *)date;
 
 @end
 
@@ -62,5 +58,6 @@ extern NSString *const kMNCalendarColorInvalidText;
 
 - (BOOL)calendarView:(MNCalendarView *)calendarView shouldSelectDate:(NSDate *)date;
 - (void)calendarView:(MNCalendarView *)calendarView didSelectDate:(NSDate *)date;
+- (void)calendarView:(MNCalendarView *)calendarView didSelectCell:(MNCalendarViewCell *)cell;
 
 @end

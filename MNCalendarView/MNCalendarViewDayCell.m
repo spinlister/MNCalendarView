@@ -23,31 +23,30 @@ NSString *const MNCalendarViewDayCellIdentifier = @"MNCalendarViewDayCellIdentif
 - (void)setDate:(NSDate *)date
           month:(NSDate *)month
        calendar:(NSCalendar *)calendar {
-  
+
   self.date     = date;
   self.month    = month;
   self.calendar = calendar;
-  
+
   NSDateComponents *components =
   [self.calendar components:NSMonthCalendarUnit|NSDayCalendarUnit|NSWeekdayCalendarUnit
                    fromDate:self.date];
-  
+
   NSDateComponents *monthComponents =
   [self.calendar components:NSMonthCalendarUnit
                    fromDate:self.month];
-  
-  self.weekday = (components.weekday + self.calendar.firstWeekday - 1) % 7;
-  self.titleLabel.text = [NSString stringWithFormat:@"%ld", (long)components.day];
+
   self.enabled = monthComponents.month == components.month;
+  self.weekday = (components.weekday + self.calendar.firstWeekday - 1) % 7;
+  self.titleLabel.hidden = components.month != monthComponents.month;
+  self.titleLabel.text = [NSString stringWithFormat:@"%ld", (long)components.day];
 }
 
 - (void)setEnabled:(BOOL)enabled {
   [super setEnabled:enabled];
 
   if (self.colors)
-    self.titleLabel.textColor = self.enabled ?
-                                  self.colors[kMNCalendarColorValidText] :
-                                  self.colors[kMNCalendarColorInvalidText];
+    self.titleLabel.textColor = self.enabled ? self.colors[kMNCalendarColorValidText] : self.colors[kMNCalendarColorInvalidText];
 }
 
 @end

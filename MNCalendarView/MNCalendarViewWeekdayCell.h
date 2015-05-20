@@ -10,8 +10,5 @@
 
 extern NSString *const MNCalendarViewWeekdayCellIdentifier;
 
-@interface MNCalendarViewWeekdayCell : MNCalendarViewCell
-
-@property(nonatomic,assign) NSUInteger weekday;
-
+@interface MNCalendarViewWeekdayCell : UILabel
 @end

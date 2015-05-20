@@ -19,10 +19,13 @@ NSString *const MNCalendarHeaderViewIdentifier = @"MNCalendarHeaderViewIdentifie
 @implementation MNCalendarHeaderView
 
 - (id)initWithFrame:(CGRect)frame {
-  if (self = [super initWithFrame:frame]) {
-    self.titleLabel = [[UILabel alloc] initWithFrame:self.bounds];
+  if (self = [super initWithFrame:frame])
+  {
+    CGFloat itemWidth  = self.bounds.size.width;
+    CGFloat itemHeight = self.bounds.size.height / 2;
+
+    self.titleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 8, itemWidth, itemHeight)];
     self.titleLabel.backgroundColor = UIColor.clearColor;
-    self.titleLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
     self.titleLabel.font = [UIFont systemFontOfSize:16.f];
     self.titleLabel.textAlignment = NSTextAlignmentCenter;
 
@@ -39,6 +42,24 @@ NSString *const MNCalendarHeaderViewIdentifier = @"MNCalendarHeaderViewIdentifie
   [dateFormatter setDateFormat:@"MMMM yyyy"];
 
   self.titleLabel.text = [dateFormatter stringFromDate:self.date];
+}
+
+#define DAYS_IN_A_WEEK 7
+
+- (void)setLabels:(NSArray *)labels attributes:(NSDictionary *)attributes
+{
+  CGFloat width      = self.bounds.size.width;
+  CGFloat itemWidth  = width / DAYS_IN_A_WEEK;
+  CGFloat itemHeight = self.bounds.size.height / 2;
+
+  for (int x = 0; x < DAYS_IN_A_WEEK; x++)
+  {
+    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(itemWidth * x, itemHeight, itemWidth, itemHeight)];
+    NSString *title = [labels[x] uppercaseString];
+    label.textAlignment = NSTextAlignmentCenter; // FIXME use mutableparagraph
+    label.attributedText = [[NSAttributedString alloc] initWithString:title attributes:attributes];
+    [self addSubview:label];
+  }
 }
 
 @end

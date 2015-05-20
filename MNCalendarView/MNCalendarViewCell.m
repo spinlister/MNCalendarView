@@ -15,22 +15,29 @@ NSString *const kMNCalendarColorHeaderBackground = @"kMNCalendarColorHeaderBackg
 NSString *const kMNCalendarColorCellBackground = @"kMNCalendarColorCellBackground";
 NSString *const kMNCalendarColorCellSeparator = @"kMNCalendarColorCellSeparator";
 NSString *const kMNCalendarColorCellHighlight = @"kMNCalendarColorCellHighlight";
+NSString *const kMNCalendarColorCellHighlightSingle = @"kMNCalendarColorCellHighlightSingle";
 NSString *const kMNCalendarColorCellHighlightRange = @"kMNCalendarColorCellHighlightRange";
+NSString *const kMNCalendarColorCellHighlightRangeFill = @"kMNCalendarColorCellHighlightRangeFill";
 NSString *const kMNCalendarColorValidTextHighlight = @"kMNCalendarColorValidTextHighlight";
 NSString *const kMNCalendarColorValidText = @"kMNCalendarColorValidText";
 NSString *const kMNCalendarColorInvalidText = @"kMNCalendarColorInvalidText";
 
-@property(nonatomic,strong,readwrite) UILabel *titleLabel;
+NSString *const kMNCalendarImageRotation = @"MNCalendarImageRotation";
+
+@interface MNCalendarViewCell()
 
 @property(nonatomic,strong) UILabel *titleLabel;
 @property(nonatomic,strong) NSDictionary *colors;
-@property(nonatomic,strong) CALayer *separatorLayer;
 @end
 
 @implementation MNCalendarViewCell
 
-- (id)initWithFrame:(CGRect)frame {
-  if (self = [super initWithFrame:frame]) {
+- (id)initWithFrame:(CGRect)frame
+{
+  if (self = [super initWithFrame:frame])
+  {
+    self.layer.borderWidth = 0;
+    self.position = MNCalendarSelectionTypeNone;
 
     self.titleLabel = [[UILabel alloc] initWithFrame:self.bounds];
     self.titleLabel.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
@@ -42,46 +49,84 @@ NSString *const kMNCalendarColorInvalidText = @"kMNCalendarColorInvalidText";
     self.titleLabel.textAlignment = NSTextAlignmentCenter;
 
     [self.contentView addSubview:self.titleLabel];
-    
-    self.selectedBackgroundView = [[UIView alloc] initWithFrame:self.bounds];
-    self.selectedBackgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
 
-    CGFloat separatorHeight = 1.0f / [UIScreen mainScreen].scale;
-    self.separatorLayer = [CALayer layer];
-    _separatorLayer.frame = CGRectMake(0,
-                                       CGRectGetHeight(self.bounds) - separatorHeight,
-                                       CGRectGetWidth(self.bounds),
-                                       separatorHeight);
-    [self.layer addSublayer:_separatorLayer];
+    self.backgroundView = [[UIImageView alloc] initWithFrame:self.bounds];
+    self.backgroundView.autoresizingMask = UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight;
   }
   return self;
 }
 
+
+- (void)setEnabled:(BOOL)enabled {
+  _enabled = enabled;
+}
+
 - (void)updateColors:(NSDictionary *)colors
 {
-  self.colors = colors;
+  if (!colors && !_colors)
+    return;
 
-  self.backgroundColor = colors[kMNCalendarColorCellBackground];
-  self.separatorColor = colors[kMNCalendarColorCellSeparator];
+  self.colors = colors;
+  self.clipsToBounds = YES;
 
   self.titleLabel.textColor = colors[kMNCalendarColorValidText];
   self.titleLabel.highlightedTextColor = colors[kMNCalendarColorValidTextHighlight];
 
-  self.separatorLayer.backgroundColor = ((UIColor *)colors[kMNCalendarColorCellSeparator]).CGColor;
-  self.selectedBackgroundView.backgroundColor = colors[kMNCalendarColorCellHighlight];
+  self.contentView.layer.borderColor = ((UIColor *)colors[kMNCalendarColorCellSeparator]).CGColor;
+  
+  UIImageView *backView = ((UIImageView *)self.backgroundView);
+  self.contentView.layer.borderWidth = 0.25f;
+  backView.image = nil;
+  backView.backgroundColor = colors[kMNCalendarColorCellBackground];
+
+  switch(_position)
+  {
+    case MNCalendarSelectionTypeSingle:
+      backView.image = [UIImage imageNamed:colors[kMNCalendarColorCellHighlightSingle]];
+      break;
+
+    case MNCalendarSelectionTypeFill:
+      self.contentView.layer.borderWidth = 0;
+      backView.backgroundColor = colors[kMNCalendarColorCellHighlightRangeFill];
+      break;
+
+    case MNCalendarSelectionTypeStart:
+    case MNCalendarSelectionTypeEnd:
+    {
+      self.contentView.layer.borderColor = ((UIColor *)colors[kMNCalendarColorCellHighlightRangeFill]).CGColor;
+      id rangeContent = colors[kMNCalendarColorCellHighlightRange];
+      if ([rangeContent isKindOfClass:[NSString class]])
+      {
+        backView.image = [UIImage imageNamed:rangeContent];
+        backView.contentMode = UIViewContentModeScaleToFill;
+      }
+      else
+        backView.backgroundColor = (UIColor *)rangeContent;
+      break;
+    }
+    default: 
+    case MNCalendarSelectionTypeNone:
+      break;
+  }
+
+  switch(_position)
+  {
+    default: 
+    case MNCalendarSelectionTypeStart:
+      backView.transform = CGAffineTransformIdentity;
+      break;
+    case MNCalendarSelectionTypeEnd:
+      backView.transform = CGAffineTransformMakeRotation(M_PI);
+      break;
+  }
 }
 
-- (void)layoutSubviews {
+- (void)layoutSubviews
+{
   [super layoutSubviews];
-  
-  self.contentView.frame = self.bounds;
-  self.selectedBackgroundView.frame = self.bounds;
 
-  CGFloat separatorHeight = 1.0f / [UIScreen mainScreen].scale;
-  _separatorLayer.frame = CGRectMake(0,
-                                     CGRectGetHeight(self.bounds) - separatorHeight,
-                                     CGRectGetWidth(self.bounds),
-                                     separatorHeight);
+  self.contentView.frame = self.bounds;
+  self.backgroundView.frame = self.bounds;
 }
 
 @end

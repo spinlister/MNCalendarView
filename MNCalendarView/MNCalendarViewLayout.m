@@ -15,7 +15,7 @@
     self.sectionInset = UIEdgeInsetsZero;
     self.minimumInteritemSpacing = 0.f;
     self.minimumLineSpacing = 0.f;
-    self.headerReferenceSize = CGSizeMake(0.f, 44.f);
+    self.headerReferenceSize = CGSizeMake(0.f, 60.f);
     self.footerReferenceSize = CGSizeZero;
   }
   return self;
@@ -94,7 +94,7 @@
       bounds.size.width *= 1.5f;
       bounds;
     })];
-  
+
   CGFloat minOffsetY = CGFLOAT_MAX;
   UICollectionViewLayoutAttributes *targetLayoutAttributes = nil;
 
