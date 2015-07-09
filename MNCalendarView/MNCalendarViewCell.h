@@ -12,6 +12,7 @@
 
 // calendar color dictionary keys
 extern NSString *const kMNCalendarColorHeaderBackground;
+extern NSString *const kMNCalendarColorHeaderText;
 extern NSString *const kMNCalendarColorCellBackground;
 extern NSString *const kMNCalendarColorCellSeparator;
 extern NSString *const kMNCalendarColorCellHighlight;

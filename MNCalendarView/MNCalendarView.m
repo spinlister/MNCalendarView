@@ -56,6 +56,7 @@
   // color defaults
   self.colors = [@{
       kMNCalendarColorHeaderBackground: [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f],
+      kMNCalendarColorHeaderText: [UIColor colorWithRed:.85f green:.85f blue:.85f alpha:1.f],
       kMNCalendarColorCellBackground: [UIColor colorWithRed:.96f green:.96f blue:.96f alpha:1.f],
       kMNCalendarColorCellSeparator: [UIColor colorWithRed:.85f green:.85f blue:.85f alpha:1.f],
       kMNCalendarColorCellHighlightSingle: [UIColor colorWithRed:0.23f green:0.61f blue:1.f alpha:1.f],
@@ -227,13 +228,17 @@
 
   headerView.backgroundColor = _colors[kMNCalendarColorHeaderBackground];
 
-  NSDictionary *textAttributes = @{ NSForegroundColorAttributeName: _colors[kMNCalendarColorInvalidText] };
+  NSDictionary *textAttributes = @{
+    NSForegroundColorAttributeName: _colors[kMNCalendarColorHeaderText],
+    NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue-Medium" size:16],
+  };
+
   NSString *title = [self.monthFormatter stringFromDate:self.monthDates[indexPath.section]];
   headerView.titleLabel.attributedText = [[NSAttributedString alloc] initWithString:[title uppercaseString] attributes:textAttributes];
 
   [headerView setLabels:self.weekdaySymbols attributes:@{
-    NSForegroundColorAttributeName: _colors[kMNCalendarColorInvalidText],
-    NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:12],
+    NSForegroundColorAttributeName: _colors[kMNCalendarColorHeaderText],
+    NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue" size:11],
   }];
 
   return headerView;

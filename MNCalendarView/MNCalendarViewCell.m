@@ -12,6 +12,7 @@ NSString *const MNCalendarViewCellIdentifier = @"MNCalendarViewCellIdentifier";
 
 // calendar color dictionary keys
 NSString *const kMNCalendarColorHeaderBackground = @"kMNCalendarColorHeaderBackground";
+NSString *const kMNCalendarColorHeaderText = @"kMNCalendarColorHeaderText";
 NSString *const kMNCalendarColorCellBackground = @"kMNCalendarColorCellBackground";
 NSString *const kMNCalendarColorCellSeparator = @"kMNCalendarColorCellSeparator";
 NSString *const kMNCalendarColorCellHighlight = @"kMNCalendarColorCellHighlight";
@@ -45,7 +46,7 @@ NSString *const kMNCalendarImageRotation = @"MNCalendarImageRotation";
     self.titleLabel.backgroundColor = [UIColor clearColor];
 
     // FIXME deprecated, update for ios6+
-    self.titleLabel.font = [UIFont systemFontOfSize:14.f];
+    self.titleLabel.font = [UIFont systemFontOfSize:19.f];
     self.titleLabel.textAlignment = NSTextAlignmentCenter;
 
     [self.contentView addSubview:self.titleLabel];
