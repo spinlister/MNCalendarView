@@ -261,7 +261,7 @@
 {
   if (!_selectedStartPath && !_selectedEndPath)
     return MNCalendarSelectionTypeNone;
-    
+
   NSComparisonResult startPath = [indexPath compare:_selectedStartPath];
   NSComparisonResult endPath = [indexPath compare:_selectedEndPath];
 
@@ -270,14 +270,14 @@
 
   else if (startPath == NSOrderedSame)
     return MNCalendarSelectionTypeStart;
-  
+
   else if (endPath == NSOrderedSame)
     return MNCalendarSelectionTypeEnd;
-  
-  else if (_selectedStartPath && startPath == NSOrderedDescending && 
+
+  else if (_selectedStartPath && startPath == NSOrderedDescending &&
            _selectedEndPath && endPath == NSOrderedAscending)
     return MNCalendarSelectionTypeFill;
-  
+
   else
     return MNCalendarSelectionTypeNone;
 }
@@ -311,6 +311,20 @@
 
   NSDate *date = [self.calendar dateFromComponents:components];
   [cell setDate:date month:monthDate calendar:self.calendar];
+
+  if ([self.delegate respondsToSelector:@selector(backgroundForDate:calendarView:)])
+  {
+    id value = [self.delegate backgroundForDate:cell.date calendarView:self];
+    if (value && [value isKindOfClass:[NSString class]])
+    {
+      UIImage *image = [[UIImage imageNamed:value] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+      cell.backgroundView = [[UIImageView alloc] initWithImage:image];
+      cell.tintColor = _colors[kMNCalendarColorCellSeparator];
+      cell.backgroundView.backgroundColor = _colors[kMNCalendarColorCellBackground];
+    }
+    else if (value && [value isKindOfClass:[UIColor class]])
+      cell.contentView.backgroundColor = (UIColor *)value;
+  }
 
   if (cell.enabled)
     [cell setEnabled:[self dateEnabled:date]];
@@ -360,16 +374,16 @@
   {
     case MNCalendarSelectionTypeStart:
       cell.position = MNCalendarSelectionTypeStart;
-      self.selectedStartPath = indexPath; 
+      self.selectedStartPath = indexPath;
       self.selectedStartDate = [cell.date mn_beginningOfDay:self.calendar];
       break;
     case MNCalendarSelectionTypeEnd:
       cell.position = MNCalendarSelectionTypeEnd;
-      self.selectedEndPath = indexPath;   
+      self.selectedEndPath = indexPath;
       self.selectedEndDate = cell.date;
       break;
   }
-   
+
   if (self.delegate && [self.delegate respondsToSelector:@selector(calendarView:didSelectDate:)])
     [self.delegate calendarView:self didSelectDate:cell.date];
 

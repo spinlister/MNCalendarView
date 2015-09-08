@@ -56,6 +56,9 @@
 
 @optional
 
+// shoehorn
+- (id)backgroundForDate:(NSDate *)date calendarView:(MNCalendarView *)calendarView;
+
 - (BOOL)calendarView:(MNCalendarView *)calendarView shouldSelectDate:(NSDate *)date;
 - (void)calendarView:(MNCalendarView *)calendarView didSelectDate:(NSDate *)date;
 - (void)calendarView:(MNCalendarView *)calendarView didSelectCell:(MNCalendarViewCell *)cell;
