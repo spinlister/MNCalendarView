@@ -290,7 +290,6 @@
 
 
   cell.position = [self selectionTypeForIndexPath:indexPath];
-  [cell updateColors:_colors];
 
   NSDate *monthDate = self.monthDates[indexPath.section];
   NSDate *firstDateInMonth = [self firstVisibleDateOfMonth:monthDate];
@@ -312,24 +311,49 @@
   NSDate *date = [self.calendar dateFromComponents:components];
   [cell setDate:date month:monthDate calendar:self.calendar];
 
+  // paint pallete colors for cell schema
+  [cell updateColors:_colors];
+  // paint custom types
+  [self applyBackgroundForCell:cell];
+  // paint pallete text colors
+  if (cell.enabled)
+    [cell setEnabled:[self dateEnabled:date]];
+  // paint custom types
+  [self applyTextColorForCell:cell];
+
+  return cell;
+}
+
+- (void)applyTextColorForCell:(MNCalendarViewDayCell *)cell
+{
+  if ([self.delegate respondsToSelector:@selector(textColorForDate:calendarView:)])
+  {
+    UIColor *value = [self.delegate textColorForDate:cell.date calendarView:self];
+    if (value)
+      cell.titleLabel.textColor = value;
+  }
+}
+
+- (void)applyBackgroundForCell:(MNCalendarViewDayCell *)cell
+{
   if ([self.delegate respondsToSelector:@selector(backgroundForDate:calendarView:)])
   {
     id value = [self.delegate backgroundForDate:cell.date calendarView:self];
     if (value && [value isKindOfClass:[NSString class]])
     {
-      UIImage *image = [[UIImage imageNamed:value] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
-      cell.backgroundView = [[UIImageView alloc] initWithImage:image];
-      cell.tintColor = _colors[kMNCalendarColorCellSeparator];
-      cell.backgroundView.backgroundColor = _colors[kMNCalendarColorCellBackground];
+      UIImageView *imageView = cell.backgroundView;
+      UIImage *image = [UIImage imageNamed:value];
+      if (cell.position == MNCalendarSelectionTypeFill)
+      {
+        imageView.image = [image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+        imageView.tintColor = [UIColor colorWithRed:79/255.0f green:180/255.0f blue:66/255.0f alpha:1];
+      }
+      else
+        imageView.image = image;
     }
     else if (value && [value isKindOfClass:[UIColor class]])
-      cell.contentView.backgroundColor = (UIColor *)value;
+      cell.backgroundView.backgroundColor = (UIColor *)value;
   }
-
-  if (cell.enabled)
-    [cell setEnabled:[self dateEnabled:date]];
-
-  return cell;
 }
 
 - (MNCalendarViewCell *)cellForDate:(NSDate *)date

@@ -57,6 +57,7 @@
 @optional
 
 // shoehorn
+- (UIColor *)textColorForDate:(NSDate *)date calendarView:(MNCalendarView *)calendarView;
 - (id)backgroundForDate:(NSDate *)date calendarView:(MNCalendarView *)calendarView;
 
 - (BOOL)calendarView:(MNCalendarView *)calendarView shouldSelectDate:(NSDate *)date;

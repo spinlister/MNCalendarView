@@ -74,10 +74,11 @@ NSString *const kMNCalendarImageRotation = @"MNCalendarImageRotation";
   self.titleLabel.highlightedTextColor = colors[kMNCalendarColorValidTextHighlight];
 
   self.contentView.layer.borderColor = ((UIColor *)colors[kMNCalendarColorCellSeparator]).CGColor;
-  
-  UIImageView *backView = ((UIImageView *)self.backgroundView);
   self.contentView.layer.borderWidth = 0.25f;
+
+  UIImageView *backView = (UIImageView *)self.backgroundView;
   backView.image = nil;
+  backView.transform = CGAffineTransformIdentity;
   backView.backgroundColor = colors[kMNCalendarColorCellBackground];
 
   switch(_position)
@@ -105,19 +106,16 @@ NSString *const kMNCalendarImageRotation = @"MNCalendarImageRotation";
         backView.backgroundColor = (UIColor *)rangeContent;
       break;
     }
-    default: 
+    default:
     case MNCalendarSelectionTypeNone:
       break;
   }
 
   switch(_position)
   {
-    default: 
-    case MNCalendarSelectionTypeStart:
-      backView.transform = CGAffineTransformIdentity;
-      break;
     case MNCalendarSelectionTypeEnd:
       backView.transform = CGAffineTransformMakeRotation(M_PI);
+    default:
       break;
   }
 }
