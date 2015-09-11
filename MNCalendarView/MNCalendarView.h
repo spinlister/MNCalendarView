@@ -46,6 +46,7 @@
 @property(nonatomic, assign) BOOL inversed;
 
 - (void)reloadData;
+- (void)clearDates;
 - (void)registerUICollectionViewClasses;
 
 - (MNCalendarViewCell *)cellForDate:(NSDate *)date;

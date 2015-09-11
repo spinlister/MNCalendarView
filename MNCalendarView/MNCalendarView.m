@@ -171,6 +171,17 @@
   [self.collectionView reloadData];
 }
 
+- (void)clearDates
+{
+  self.selectedStartPath = nil;
+  self.selectedEndPath = nil;
+
+  self.selectedStartDate = nil;
+  self.selectedEndDate = nil;
+
+  [self reloadData];
+}
+
 - (void)registerUICollectionViewClasses {
   [_collectionView registerClass:self.dayCellClass
       forCellWithReuseIdentifier:MNCalendarViewDayCellIdentifier];
