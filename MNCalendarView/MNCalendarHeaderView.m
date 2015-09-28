@@ -54,9 +54,14 @@ NSString *const MNCalendarHeaderViewIdentifier = @"MNCalendarHeaderViewIdentifie
 
   for (int x = 0; x < DAYS_IN_A_WEEK; x++)
   {
-    UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(itemWidth * x, itemHeight, itemWidth, itemHeight)];
+    UILabel *label = (UILabel *)[self viewWithTag:x+1];
+    if (!label)
+    {
+      label = [[UILabel alloc] initWithFrame:CGRectMake(itemWidth * x, itemHeight, itemWidth, itemHeight)];
+      label.tag = x+1;
+      label.textAlignment = NSTextAlignmentCenter; // FIXME use mutableparagraph
+    }
     NSString *title = [labels[x] uppercaseString];
-    label.textAlignment = NSTextAlignmentCenter; // FIXME use mutableparagraph
     label.attributedText = [[NSAttributedString alloc] initWithString:title attributes:attributes];
     [self addSubview:label];
   }
